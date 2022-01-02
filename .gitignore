@@ -12,3 +12,6 @@ local_settings.py
 
 .env
 db.sqlite3
+
+login.csv
+GCP_cred.json

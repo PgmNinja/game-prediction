@@ -1,0 +1,41 @@
+{% extends 'templates/base_temp.html' %}
+
+ {% load static %}
+ 
+ {% block style %}
+
+ <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+
+
+
+{% endblock %}
+
+
+{% block title %}predict{% endblock %}
+
+{% block content %}
+
+<h1 class="predict">Let's predict!</h1>
+
+<form class="select-menu" method="post" action="{% url 'services:predict' %}">
+    {% csrf_token %}
+    <select class="form-select" name="home">
+      <option selected>Select home team</option>
+      {% for team in teams %}
+        <option value="{{team}}">{{team}}</option>
+      {% endfor %}
+    </select>
+    <br>
+    <select class="form-select" name="away">
+      <option selected>Select away team</option>
+      {% for team in teams %}
+        <option value="{{team}}">{{team}}</option>
+      {% endfor %}
+    </select>
+    <br>
+    <button type="submit" class="btn btn-danger" name="save">Predict</button>
+</form>
+
+
+
+{% endblock %}

@@ -5,116 +5,40 @@ import numpy as np
 import pandas as pd
 from .choices import team_choices
 from google.cloud import storage
-import tweepy
-from textblob import TextBlob
 import re
 from .google import Create_Service
 import os
-import io
-from googleapiclient.http import MediaIoBaseDownload
 import requests
+from .functions import twitter_api, clean_txt, get_polar, get_data
 
 
 CLIENT_SECRET_FILE = 'client_secret.json'
 API_NAME = 'drive'
 API_VERSION = 'v3'
 SCOPES = ['https://www.googleapis.com/auth/drive']
-DRIVE_URL = 'https://docs.google.com/uc?export=download'
+
+download_link = requests.get("https://football-data.co.uk/englandm.php").text
 
 #That port is already in use error fix
-# kill -9 $(ps -A | grep python | awk '{print $1}')\
+# kill -9 $(ps -A | grep python | awk '{print $1}')
 
-#enable google drive 
+#enable google drive (APIs and service --> Library)
 #In Auth2 credentials --> redirect_uri: http://localhost:8080/
 #test user should be added to grant access
+# For production --> OAuth consent screen --> Publishing status
+# "Publish app"
+# OAuth consent screen --> Edit App --> add scope
 
 service = Create_Service(CLIENT_SECRET_FILE, API_NAME, API_VERSION, SCOPES)
 
 
-def drive_api():
-    
-    # https://drive.google.com/drive/folders/1naSzPiBscG81IK2wgvwqrEG0zVqVqqTo?usp=sharing
-    folder_id = '1naSzPiBscG81IK2wgvwqrEG0zVqVqqTo'
-    query = f"parents = '{folder_id}'"
-
-    response = service.files().list(q=query).execute()
-
-    files = response.get('files')
-    nextPageToken = response.get('nextPageToken')
-
-    while nextPageToken:
-        response = service.files().list(q=query, pageToken=nextPageToken).execute()
-        files.extend(response.get('files'))
-        nextPageToken = response.get('nextPageToken')
-
-    try:
-        os.mkdir('data')
-    except:
-        return False
-
-    for file in files:
-        file_id = file['id']
-        file_name = file['name']
-
-        request = service.files().get_media(fileId=file_id)
-
-        fh = io.BytesIO()
-        downloader = MediaIoBaseDownload(fd=fh, request=request)
-
-        done = False
-
-        while not done:
-            status, done = downloader.next_chunk()
-            print('Download progrss {0}'.format(status.progress()*100))
-
-        fh.seek(0)
-
-        with open(os.path.join('data', file_name), 'wb') as f:
-            f.write(fh.read())
-            f.close()
-
-
-drive_api()
-   
-
-    
 
 def model_loaded():
     with open('saved.pkl', 'rb') as file:
         data = pickle.load(file)
     return data
 
-
-
-def twitter_api():
-    login = pd.read_csv('login.csv')
-
-    cons_key = login['Keys'][0]
-    cons_key_sec = login['Keys'][1]
-    acc_token = login['Keys'][2]
-    acc_token_sec = login['Keys'][3]
-
-    authenticate = tweepy.OAuthHandler(cons_key, cons_key_sec)
-
-    authenticate.set_access_token(acc_token, acc_token_sec)
-
-    api = tweepy.API(authenticate, wait_on_rate_limit=True)
-
-    return api 
-
-
-def CleanTxt(text):
-    text = re.sub(r'@[A-Za-z0-9]+', '', text) #removes @mentions
-    text = re.sub(r'#', '', text) #removes the #
-    text = re.sub(r'RT[\s]+', '', text) #removes RT
-    text = re.sub(r':', '', text)
-    text = re.sub(r'https?:\/\/\S+', '', text) #removes the hyperlink
-
-    return text
-
-
-def getPolar(text):
-    return TextBlob(text).sentiment.polarity
+get_data(download_link)
 
 
 class PredictView(View):
@@ -140,8 +64,11 @@ class PredictView(View):
         df_home = pd.DataFrame([tweet.full_text for tweet in home_twt], columns=['Tweets'])
         df_away = pd.DataFrame([tweet.full_text for tweet in away_twt], columns=['Tweets'])
 
-        df_home['Polarity'] = df_home['Tweets'].apply(getPolar)
-        df_away['Polarity'] = df_away['Tweets'].apply(getPolar)
+        df_home['Tweets'] = df_home['Tweets'].apply(clean_txt)
+        df_away['Tweets'] = df_away['Tweets'].apply(clean_txt)
+
+        df_home['Polarity'] = df_home['Tweets'].apply(get_polar)
+        df_away['Polarity'] = df_away['Tweets'].apply(get_polar)
 
         home_polar = np.mean(df_home['Polarity'].values)
         away_polar = np.mean(df_away['Polarity'].values)

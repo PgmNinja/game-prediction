@@ -69,12 +69,13 @@ def drive_api_upload(service):
         files.append(os.path.basename(file))
 
     for file in files:
+        file_path = os.path.join(path, file)
         file_metadata = {
         'name': file,
         'parents': [folder_id]
         }
 
-        media = MediaIoBaseUpload(os.path.join(path, file), mimetype='text/csv')
+        media = MediaIoBaseUpload(file_path, mimetype='text/csv')
 
         service.files().create(
             body=file_metadata,

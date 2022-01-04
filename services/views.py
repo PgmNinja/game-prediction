@@ -4,20 +4,12 @@ import pickle
 import numpy as np
 import pandas as pd
 from .choices import team_choices
-from google.cloud import storage
 import re
-from .google import Create_Service
 import os
 import requests
-from .functions import twitter_api, clean_txt, get_polar, get_data
+from .functions import twitter_api, clean_txt, get_polar 
+from ml_app.functions import drive_api_upload
 
-
-CLIENT_SECRET_FILE = 'client_secret.json'
-API_NAME = 'drive'
-API_VERSION = 'v3'
-SCOPES = ['https://www.googleapis.com/auth/drive']
-
-download_link = requests.get("https://football-data.co.uk/englandm.php").text
 
 #That port is already in use error fix
 # kill -9 $(ps -A | grep python | awk '{print $1}')
@@ -29,16 +21,24 @@ download_link = requests.get("https://football-data.co.uk/englandm.php").text
 # "Publish app"
 # OAuth consent screen --> Edit App --> add scope
 
-service = Create_Service(CLIENT_SECRET_FILE, API_NAME, API_VERSION, SCOPES)
+from services.google import Create_Service
 
+CLIENT_SECRET_FILE = 'client_secret.json'
+API_NAME = 'drive'
+API_VERSION = 'v3'
+SCOPES = ['https://www.googleapis.com/auth/drive']
+
+
+drive_service = Create_Service(CLIENT_SECRET_FILE, API_NAME, API_VERSION, SCOPES)
+
+
+drive_api_upload(drive_service)
 
 
 def model_loaded():
     with open('saved.pkl', 'rb') as file:
         data = pickle.load(file)
     return data
-
-get_data(download_link)
 
 
 class PredictView(View):

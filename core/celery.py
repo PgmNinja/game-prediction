@@ -11,11 +11,18 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 
 app.conf.beat_schedule = {
-    'add_data_periodically': {
+    'load_data_periodically': {
         'task': 'ml_app.tasks.weekly_data_load',
-        'schedule': crontab(hour=12, minute=50, day_of_week=2)
+        'schedule': crontab(hour=7, minute=35, day_of_week=4)
+    },
+
+
+    'save_data_periodically': {
+        'task': 'ml_app.tasks.weekly_data_save',
+        'schedule': crontab(hour=7, minute=40, day_of_week=4)
     }
 }
+
 
 app.autodiscover_tasks()
 

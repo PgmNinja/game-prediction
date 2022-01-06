@@ -4,6 +4,9 @@ import shutil
 import io
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 import requests
+import pandas as pd
+
+pd.options.mode.chained_assignment = None
 
 from services.google import Create_Service
 
@@ -111,4 +114,54 @@ def get_data(source):
     return "Successfully loaded data."
 
 
+
+def save_data():
+    try:
+        os.remove('EPL.csv')
+    except OSError:
+        print("File EPL.csv does not exist")
+
+    all_match = pd.DataFrame()
+
+    files = [file for file in os.listdir('ml_app/data')]
+
+    for file in files:
+        df = pd.read_csv('ml_app/data/'+file)
+        all_match = pd.concat([all_match, df])
+
+    all_df = all_match.dropna(how='all')
+
+    all_df['Date'] = pd.to_datetime(all_df['Date'])
+    all_df['Year'] = all_df['Date'].dt.year
+    all_df = all_df.sort_values('Year')
+
+    all_df = all_df.sort_values('Year', ascending=False)
+
+    all_df.to_csv('EPL.csv')
+
+    return "Successfully saved data."
+
+
+
+def get_data_set():
+    data = pd.read_csv('EPL.csv')
+
+    res = []
+    res_num = []
+
+    for i in range(data.shape[0]):
+        if data['FTHG'][i] > data['FTAG'][i]:
+            res_num.append(2)
+        elif data['FTAG'][i] > data['FTHG'][i]:
+            res_num.append(0)
+        else:
+            res_num.append(1)
+
+    data['Result'] = res_num
+
+    dataset = pd.DataFrame((data['HomeTeam'][i] for i in range(data.shape[0])), columns=['HomeTeam'])
+    dataset['AwayTeam'] = data['AwayTeam']
+    dataset['Results'] = data['Result']
+
+    return dataset
 

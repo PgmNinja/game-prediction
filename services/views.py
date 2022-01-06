@@ -11,6 +11,7 @@ from .functions import twitter_api, clean_txt, get_polar
 from ml_app.functions import drive_api_upload
 
 
+
 #That port is already in use error fix
 # kill -9 $(ps -A | grep python | awk '{print $1}')
 
@@ -21,23 +22,23 @@ from ml_app.functions import drive_api_upload
 # "Publish app"
 # OAuth consent screen --> Edit App --> add scope
 
-from services.google import Create_Service
+# from services.google import Create_Service
 
-CLIENT_SECRET_FILE = 'client_secret.json'
-API_NAME = 'drive'
-API_VERSION = 'v3'
-SCOPES = ['https://www.googleapis.com/auth/drive']
-
-
-drive_service = Create_Service(CLIENT_SECRET_FILE, API_NAME, API_VERSION, SCOPES)
+# CLIENT_SECRET_FILE = 'client_secret.json'
+# API_NAME = 'drive'
+# API_VERSION = 'v3'
+# SCOPES = ['https://www.googleapis.com/auth/drive']
 
 
-drive_api_upload(drive_service)
+# drive_service = Create_Service(CLIENT_SECRET_FILE, API_NAME, API_VERSION, SCOPES)
+
+
+# drive_api_upload(drive_service)
 
 
 def model_loaded():
-    with open('saved.pkl', 'rb') as file:
-        data = pickle.load(file)
+    with open('saved.pkl', 'rb') as _file:
+        data = pickle.load(_file)
     return data
 
 

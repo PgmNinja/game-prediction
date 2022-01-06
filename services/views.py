@@ -97,9 +97,6 @@ class PredictView(View):
 
         probs = model.predict_proba(X)[0]
 
-        print(X1)
-
-
         context = {
                     'teams': team_choices, 
                     'status': status,

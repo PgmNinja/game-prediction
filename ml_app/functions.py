@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
+import pickle
 
 pd.options.mode.chained_assignment = None
 
@@ -172,3 +173,41 @@ def get_data_set():
 
     return dataset
 
+
+def save_model(dataset):
+    try:
+        os.remove('saved.pkl')
+    except OSError:
+        print("File 'saved.pkl' does not exist.")
+        
+    le_home_team = LabelEncoder()
+    dataset['HomeTeam'] = le_home_team.fit_transform(dataset['HomeTeam'])
+    dataset['HomeTeam'].unique()
+
+    le_away_team = LabelEncoder()
+    dataset['AwayTeam'] = le_away_team.fit_transform(dataset['AwayTeam'])
+    dataset['AwayTeam'].unique()
+
+    X = dataset.drop('Results', axis=1)
+    y = dataset['Results']
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=3)
+    sc = StandardScaler()
+    X_train = sc.fit_transform(X_train)
+    X_test = sc.transform(X_test)
+    model = SVC(probability=True)
+    model.fit(X_train, y_train)
+
+    data = {'model':model, 'le_home_team':le_home_team, 'le_away_team':le_away_team}
+
+    with open('saved.pkl', 'wb') as _file:
+        pickle.dump(data, _file)
+
+    with open('saved.pkl', 'rb') as _file:
+        data = pickle.load(_file)
+
+    model = data['model']
+
+    accuracy = model.score(X_test,y_test)
+
+    return f"Successfully saved prediction model with accuracy {accuracy}"

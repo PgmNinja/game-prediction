@@ -7,8 +7,8 @@ from .choices import team_choices
 import re
 import os
 import requests
-from .functions import twitter_api, clean_txt, get_polar 
-from ml_app.functions import drive_api_upload
+from .functions import twitter_api, clean_txt, get_polar
+from ml_app.functions import get_data_set 
 
 
 
@@ -56,8 +56,10 @@ class PredictView(View):
 
         api = twitter_api()
 
-        home_team = request.POST.get("home")
-        away_team = request.POST.get("away")
+        home_team = request.POST.get('home', None)
+        away_team = request.POST.get('away', None)
+        request.session['home'] = home_team
+        request.session['away'] = away_team
 
         home_twt = api.search_tweets(q=home_team, count=100000, lang='en', tweet_mode='extended')
         away_twt = api.search_tweets(q=away_team, count=100000, lang='en', tweet_mode='extended')
@@ -73,6 +75,8 @@ class PredictView(View):
 
         home_polar = np.mean(df_home['Polarity'].values)
         away_polar = np.mean(df_away['Polarity'].values)
+        request.session['home_polar'] = home_polar
+        request.session['away_polar'] = away_polar
 
         if home_polar >= away_polar:
             X = np.array([[home_team, away_team]])
@@ -97,6 +101,8 @@ class PredictView(View):
 
         probs = model.predict_proba(X)[0]
 
+        print(probs)
+
         context = {
                     'teams': team_choices, 
                     'status': status,
@@ -106,3 +112,65 @@ class PredictView(View):
                     }
                     
         return render(request, 'templates/predict.html', context)
+
+
+
+class AnalysisView(View):
+    def get(self, request, *args, **kwargs):
+        data = get_data_set()
+        home_team = request.session['home']
+        away_team = request.session['away']
+        home_polar = request.session['home_polar']*100
+        away_polar = request.session['away_polar']*100
+
+        home_team_df = pd.concat([data.loc[data['HomeTeam'] == home_team], data.loc[data['AwayTeam'] == home_team]])
+        away_team_df = pd.concat([data.loc[data['HomeTeam'] == away_team], data.loc[data['AwayTeam'] == away_team]])
+
+        df_head_to_head = pd.concat([data.loc[(data['HomeTeam'] == home_team) & (data['AwayTeam'] == away_team)], \
+            data.loc[(data['HomeTeam'] == away_team) & (data['AwayTeam'] == home_team)]])
+
+        home_stats = {}
+        away_stats = {}
+
+        home_team_win = 0
+        away_team_win = 0
+
+        for i in range(home_team_df.shape[0]):
+            if (home_team_df['HomeTeam'].iloc[i] == home_team and home_team_df['Results'].iloc[i] == 2) or \
+            (home_team_df['AwayTeam'].iloc[i] == home_team and home_team_df['Results'].iloc[i] == 0):
+                if home_team_df['Year'].iloc[i] in home_stats:
+                    home_stats[home_team_df['Year'].iloc[i]] += 1 
+                else:
+                    home_stats[home_team_df['Year'].iloc[i]] = 1
+
+        for i in range(away_team_df.shape[0]):
+            if (away_team_df['HomeTeam'].iloc[i] == away_team and away_team_df['Results'].iloc[i] == 2) or \
+            (away_team_df['AwayTeam'].iloc[i] == away_team and away_team_df['Results'].iloc[i] == 0):
+                if away_team_df['Year'].iloc[i] in away_stats:
+                    away_stats[away_team_df['Year'].iloc[i]] += 1 
+                else:
+                    away_stats[away_team_df['Year'].iloc[i]] = 1
+
+
+        for i in range(df_head_to_head.shape[0]):
+            if ((df_head_to_head['HomeTeam'].iloc[i] == home_team) and (df_head_to_head['Results'].iloc[i] == 2)) or \
+            ((df_head_to_head['AwayTeam'].iloc[i] == home_team) and (df_head_to_head['Results'].iloc[i] == 0)):
+                home_team_win += 1
+
+            if ((df_head_to_head['HomeTeam'].iloc[i] == away_team) and (df_head_to_head['Results'].iloc[i] == 2)) or \
+            ((df_head_to_head['AwayTeam'].iloc[i] == away_team) and (df_head_to_head['Results'].iloc[i] == 0)):
+                away_team_win += 1
+
+
+        context = {
+        'home_team': home_team,
+        'away_team': away_team,
+        'home_stats': home_stats,
+        'away_stats': away_stats,
+        'home_count': home_team_win,
+        'away_count': away_team_win,
+        'home_polar': home_polar,
+        'away_polar': away_polar
+        }
+
+        return render(request, 'templates/analysis.html', context)

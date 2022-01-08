@@ -1,0 +1,150 @@
+{% extends 'templates/base_temp.html' %}
+
+ {% load static %}
+ 
+ {% block style %}
+
+ <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+
+{% endblock %}
+
+
+{% block title %}analysis{% endblock %}
+
+{% block content %}
+
+<h1 class="analysis">Analysis</h1>
+
+<hr class="line" style="padding-left: 2em; padding-right: 2em;">
+<h3 class="analysis-1">Performance over years</h3>
+
+<div class="container">
+  <div class="home">
+    <canvas id="homeChart" style="width:150%;max-width:900px; margin-top: 2em;"></canvas>
+    <p style="padding-left: 2em;">{{home_team}}</p>
+  </div>
+  <div class="away">
+    <canvas id="awayChart" style="width:150%;max-width:900px; margin-top: 2em;"></canvas>
+    <p style="padding-left: 2em;">{{away_team}}</p>
+  </div>
+</div>
+
+<hr class="line" style="padding-left: 2em; padding-right: 2em;">
+<h3 class="analysis-1">Head-to-head analysis</h3>
+<canvas id="head-to-head" style="width:150%;max-width:900px"></canvas>
+
+<hr class="line" style="padding-left: 2em; padding-right: 2em;">
+<h3 class="analysis-1">Support on Twitter</h3>
+<canvas id="twitter" style="width:150%;max-width:900px"></canvas>
+
+<script>
+  var xValuesHome = [];
+  var yValuesHome = [];
+  {% for key, val in home_stats.items %}
+    xValuesHome.push({{key|safe}})
+    yValuesHome.push({{val|safe}})
+  {% endfor %}
+
+  xValuesHome = xValuesHome.reverse()
+  yValuesHome = yValuesHome.reverse()
+
+new Chart("homeChart", {
+  type: "line",
+  data: {
+    labels: xValuesHome,
+    datasets: [{
+      fill: false,
+      lineTension: 0,
+      backgroundColor: "rgba(0,0,255,1.0)",
+      borderColor: "rgba(0,0,255,0.1)",
+      data: yValuesHome
+    }]
+  },
+  options: {
+    legend: {display: false},
+    scales: {
+      yAxes: [{ticks: {min: 0, max:50}}],
+    }
+  }
+});
+
+
+  var xValuesAway = [];
+  var yValuesAway = [];
+  {% for key, val in away_stats.items %}
+    xValuesAway.push({{key|safe}})
+    yValuesAway.push({{val|safe}})
+  {% endfor %}
+
+  xValuesAway = xValuesAway.reverse()
+  yValuesAway = yValuesAway.reverse()
+
+  new Chart("awayChart", {
+    type: "line",
+    data: {
+      labels: xValuesAway,
+      datasets: [{
+        fill: false,
+        lineTension: 0,
+        backgroundColor: "rgba(0,0,255,1.0)",
+        borderColor: "rgba(0,0,255,0.1)",
+        data: yValuesAway
+      }]
+    },
+    options: {
+      legend: {display: false},
+      scales: {
+        yAxes: [{ticks: {min: 0, max:50}}],
+      }
+    }
+  });
+
+  var xValues = ["{{home_team|safe}}", "{{away_team|safe}}"];
+  var yValues = [{{home_count|safe}}, {{away_count|safe}}];
+  var barColors = [
+    "#ff6969",
+    "#00aba9",
+  ];
+
+  new Chart("head-to-head", {
+    type: "pie",
+    data: {
+      labels: xValues,
+      datasets: [{
+        backgroundColor: barColors,
+        data: yValues
+      }]
+    },
+    options: {
+      title: {
+        display: true,
+      }
+    }
+  });
+
+  var xValues = ["{{home_team|safe}}", "{{away_team|safe}}"];
+  var yValues = [{{home_polar|safe}}, {{away_polar|safe}}];
+  var barColors = ["#ff6969", "#00aba9"];
+
+  new Chart("twitter", {
+    type: "bar",
+    data: {
+      labels: xValues,
+      datasets: [{
+        backgroundColor: barColors,
+        data: yValues
+      }]
+    },
+    options: {
+      legend: {display: false},
+      title: {
+        display: true,
+      }
+    }
+  });
+</script>
+
+
+
+{% endblock %}

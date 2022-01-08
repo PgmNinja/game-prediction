@@ -127,7 +127,7 @@ def save_data():
     try:
         os.remove('EPL.csv')
     except OSError:
-        print("File EPL.csv does not exist")
+        print("File 'EPL.csv' does not exist")
 
     all_match = pd.DataFrame()
 
@@ -152,9 +152,7 @@ def save_data():
 
 
 def get_data_set():
-    data = pd.read_csv('EPL.csv')
-
-    res = []
+    data = pd.read_csv('EPL.csv', sep=r'\s*,\s*', header=0, encoding='ascii', engine='python')
     res_num = []
 
     for i in range(data.shape[0]):
@@ -170,6 +168,7 @@ def get_data_set():
     dataset = pd.DataFrame((data['HomeTeam'][i] for i in range(data.shape[0])), columns=['HomeTeam'])
     dataset['AwayTeam'] = data['AwayTeam']
     dataset['Results'] = data['Result']
+    dataset['Year'] = data['Year']
 
     return dataset
 
@@ -179,7 +178,7 @@ def save_model(dataset):
         os.remove('saved.pkl')
     except OSError:
         print("File 'saved.pkl' does not exist.")
-        
+
     le_home_team = LabelEncoder()
     dataset['HomeTeam'] = le_home_team.fit_transform(dataset['HomeTeam'])
     dataset['HomeTeam'].unique()
@@ -188,7 +187,7 @@ def save_model(dataset):
     dataset['AwayTeam'] = le_away_team.fit_transform(dataset['AwayTeam'])
     dataset['AwayTeam'].unique()
 
-    X = dataset.drop('Results', axis=1)
+    X = dataset[['HomeTeam', 'AwayTeam']]
     y = dataset['Results']
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=3)
